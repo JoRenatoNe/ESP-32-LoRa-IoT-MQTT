@@ -1,0 +1,76 @@
+//Publicacao de dados IBM Watson MQTT
+
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include<LoRa.h>
+
+const char* ssid = "Rede xxxxx";
+const char* password = "xxxxx";
+
+
+#define ID_organizacao "xxxx"
+#define Tipo_Dispositivo "ESP32"
+#define ID_Dispositivo "001"
+#define Token_Dispositivo "xxxxxxxxxxxx"
+
+
+char Server_Platform_Maker_IoT[] = ID_organizacao ".messaging.internetofthings.ibmcloud.com";
+char Topic[] = "iot-2/evt/status/fmt/json";
+char AuthMethod[] = "use-token-auth";
+char Token[] = Token_Dispositivo;
+char Client_ID[] = "d:" ID_organizacao ":" Tipo_Dispositivo ":" ID_Dispositivo;
+
+
+WiFiClient wifiClient;
+PubSubClient client(Server_Platform_Maker_IoT, 1883, NULL, wifiClient);
+
+
+void setup(){
+Serial.begin(115200);
+Serial.println();
+
+Serial.print("Connecting to"); 
+Serial.print(ssid);
+WiFi.begin(ssid, password);
+while (WiFi.status() != WL_CONNECTED){
+delay(500);
+Serial.print(".");
+    
+}
+
+Serial.println("");
+
+Serial.print("WiFi connected, IP address: "); 
+Serial.println(WiFi.localIP());
+}
+
+
+void loop(){
+
+if (!!!client.connected()){
+Serial.print("Reconnecting client to ");
+Serial.println(Server_Platform_Maker_IoT);
+while (!!!client.connect(Client_ID, AuthMethod, Token)){
+Serial.print(".");
+delay(500);
+}
+Serial.println();
+}
+
+String payload = "{ \"d\" : {\"Message\":";
+payload += millis()/1000;
+payload += "}}";
+
+Serial.print("Sending payload: ");
+Serial.println(payload);
+
+if (client.publish (Topic, (char*) payload.c_str())){
+Serial.println("Publish ok");
+      
+} else {
+Serial.println("Publish failed");
+}
+
+delay(10000);
+  
+}
