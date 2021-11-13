@@ -1,0 +1,174 @@
+//PRINCIPAL (MASTER-SLAVE)
+
+#include <SPI.h> 
+#include <LoRa.h> 
+#include <Wire.h> 
+#include <SSD1306.h> 
+
+//#define MASTER
+
+#define SCK 5   // GPIO5  SCK
+#define MISO 19 // GPIO19 MISO
+#define MOSI 27 // GPIO27 MOSI
+#define SS 18   // GPIO18 CS
+#define RST 14  // GPIO14 RESET
+#define DI00 26 // GPIO26 IRQ(Interrupt Request)
+
+#define BAND 915E6 
+
+const String GETDATA = "getdata";
+
+const String SETDATA = "setdata=";
+
+SSD1306 display(0x3c, 4, 15);
+
+void setupDisplay(){
+
+pinMode(16, OUTPUT);
+  
+digitalWrite(16, LOW);
+digitalWrite(16, HIGH);
+
+display.init();
+display.flipScreenVertically();
+display.setFont(ArialMT_Plain_10);
+display.setTextAlignment(TEXT_ALIGN_LEFT);
+}
+
+void setupLoRa(){ 
+
+SPI.begin(SCK, MISO, MOSI, SS);
+LoRa.setPins(SS, RST, DI00);
+
+if (!LoRa.begin(BAND)){
+  
+display.clear();
+display.drawString(0, 0, "Erro ao inicializar o LoRa!");
+display.display();
+while (1);
+}
+
+LoRa.enableCrc();
+
+LoRa.receive();
+}
+
+//MASTER
+
+#ifdef MASTER
+
+#define INTERVAL 500
+
+long lastSendTime = 0;
+
+void setup(){
+Serial.begin(115200);
+  
+setupDisplay();
+  
+setupLoRa();
+
+display.clear();
+display.drawString(0, 0, "Master");
+display.display();
+}
+
+void loop(){
+
+if (millis() - lastSendTime > INTERVAL){
+  
+lastSendTime = millis();
+    
+send();
+}
+
+receive();
+}
+
+void send(){
+
+LoRa.beginPacket();
+  
+LoRa.print(GETDATA);
+  
+LoRa.endPacket();
+}
+
+void receive(){
+
+int packetSize = LoRa.parsePacket();
+  
+if (packetSize > SETDATA.length()){
+String received = "";
+    
+while(LoRa.available()){
+received += (char) LoRa.read();
+}
+
+int index = received.indexOf(SETDATA);
+if(index >= 0){
+    
+String data = received.substring(SETDATA.length());
+      
+String waiting = String(millis() - lastSendTime);
+      
+display.clear();
+display.drawString(0, 0, "Recebeu: " + data);
+display.drawString(0, 10, "Tempo: " + waiting + "ms");
+display.display();
+}
+}
+}
+
+#endif
+
+//SLAVE
+
+#ifndef MASTER
+
+int count = 0;
+
+void setup(){
+Serial.begin(115200);
+    
+setupDisplay();
+    
+setupLoRa();
+display.clear();
+display.drawString(0, 0, "Slave esperando...");
+display.display();
+}
+
+void loop(){
+
+int packetSize = LoRa.parsePacket();
+
+if (packetSize == GETDATA.length()){
+String received = "";
+
+while(LoRa.available()){
+received += (char) LoRa.read();
+}
+
+if(received.equals(GETDATA)){
+    
+String data = readData();
+Serial.println("Criando pacote para envio");
+      
+LoRa.beginPacket();
+LoRa.print(SETDATA + data);
+      
+LoRa.endPacket();
+      
+display.clear();
+display.drawString(0, 0, "Enviou: " + String(data));
+display.display();
+}
+}
+}
+
+String readData(){
+return String(count++);
+}
+
+#endif
