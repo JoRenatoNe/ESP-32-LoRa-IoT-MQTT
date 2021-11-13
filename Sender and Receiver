@@ -1,11 +1,12 @@
 //SENDER
 
+//Inclusão das bibliotecas
 #include <SPI.h>
 #include <LoRa.h>
 #include "SSD1306.h"
 #include<Arduino.h>
  
-//OLED pins to ESP32 GPIOs via this connecthin:
+//Pinos GPIOs ESP32 display OLED por meio desta conexão
 //OLED_SDA -- GPIO4
 //OLED_SCL -- GPIO15
 //OLED_RST -- GPIO16
@@ -23,8 +24,11 @@ SSD1306  display(0x3c, 4, 15);
 #define SS      18
 #define RST     14
 #define DI0     26
+
+//Definição da frequência
 #define BAND    915E6 
- 
+
+//Contador de pacotes enviados via radio LoRa
 int counter = 0;
  
 void setup() {
@@ -33,31 +37,38 @@ pinMode(16,OUTPUT);
 digitalWrite(16, LOW);    
 delay(50); 
 digitalWrite(16, HIGH);
-   
+
+// Serial iniciada com a velocidade de 115200
 Serial.begin(115200);
 while (!Serial); 
- 
+
+//Configurações de inicialização do display OLED
 display.init();
 display.flipScreenVertically();
 display.setFont(ArialMT_Plain_10);
 display.setTextAlignment(TEXT_ALIGN_LEFT);
 display.drawString(5,5,"LoRa Sender");
 display.display();
-   
+
+//Configurações para inicializar o LoRa
 SPI.begin(5,19,27,18);
 LoRa.setPins(SS,RST,DI0);
 Serial.println("LoRa Sender");
+
+//Se não iniciar, exibe mensagem de erro
 if (!LoRa.begin(BAND)) {
 Serial.println("Starting LoRa failed!");
 while (1);
 }
 
+//Se sim, exibe mensagem de inicio e apresenta no display
 Serial.println("LoRa Initial OK!");
 display.drawString(5,20,"LoRa Initializing OK!");
 display.display();
 delay(2000);
 }
 
+//Processo de envio
 void loop() {
 Serial.print("Sending packet: ");
 Serial.println(counter);
@@ -67,6 +78,7 @@ display.drawString(3, 5, "Sending packet ");
 display.drawString(50, 30, String(counter));
 display.display();
 
+//contagem e leitura de pacotes
 LoRa.beginPacket();
 LoRa.print("Hello..");
 LoRa.print(counter);
@@ -88,7 +100,7 @@ delay(3000);
 SSD1306  display(0x3c, 4, 15);
 
 //PINOUT
-//OLED pins to ESP32 GPIOs via this connection:
+
 //OLED_SDA -- GPIO4
 //OLED_SCL -- GPIO15
 //OLED_RST -- GPIO16
@@ -136,10 +148,12 @@ display.display();
 }
 
 void loop() {
- 
+
+//Processo de recepção de pacotes
 int packetSize = LoRa.parsePacket();
 if (packetSize) {
-    
+
+//após receber, exibe no display
 Serial.print("Received packet. ");
 display.clear();
 display.setFont(ArialMT_Plain_16);
@@ -152,7 +166,8 @@ Serial.print(data);
 display.drawString(20,22, data);
 display.display();
 }
-   
+
+//Exibição dos parâmetros RSSI e SNR. Para uma melhor visualização é conveniente comentar um dos parâmetros e exibir um por vez
 Serial.print(" with Snr ");
 //Serial.println(LoRa.packetRssi());
 Serial.println("Snr: " + String(LoRa.packetSnr()));
