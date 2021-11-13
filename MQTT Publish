@@ -1,12 +1,19 @@
 //Publicacao de dados IBM Watson MQTT
 
+
+//Inicialmente, é necessário adicionar as bibliotecas abaixo
+
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include<LoRa.h>
 
+//Essas constantes servem para adionar os dados da rede local
+
 const char* ssid = "Rede xxxxx";
 const char* password = "xxxxx";
 
+
+//Nessa etapa deve ser inserido os dados do dispositivo(ESP 32 LoRa) disponibilizados pela plataforma IBM Cloud após inscrição:
 
 #define ID_organizacao "xxxx"
 #define Tipo_Dispositivo "ESP32"
@@ -14,12 +21,15 @@ const char* password = "xxxxx";
 #define Token_Dispositivo "xxxxxxxxxxxx"
 
 
+//Dados para publicação de dados no servidor: Link do server, Tópico, Método de autenticação, token e dados do client
+
 char Server_Platform_Maker_IoT[] = ID_organizacao ".messaging.internetofthings.ibmcloud.com";
 char Topic[] = "iot-2/evt/status/fmt/json";
 char AuthMethod[] = "use-token-auth";
 char Token[] = Token_Dispositivo;
 char Client_ID[] = "d:" ID_organizacao ":" Tipo_Dispositivo ":" ID_Dispositivo;
 
+//Loop para conexão a rede local e publicação dos dados através do ESP
 
 WiFiClient wifiClient;
 PubSubClient client(Server_Platform_Maker_IoT, 1883, NULL, wifiClient);
@@ -56,6 +66,9 @@ delay(500);
 }
 Serial.println();
 }
+
+
+//O dado publicado é uma string com um número aleatório para fins de demonstração: Deve ser seguido essa estrutura do payload, é padrão da plataforma MQTT
 
 String payload = "{ \"d\" : {\"Message\":";
 payload += millis()/1000;
